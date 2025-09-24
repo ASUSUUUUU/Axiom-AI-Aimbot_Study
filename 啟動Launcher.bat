@@ -3,11 +3,23 @@
 :: Axiom AI - 环境配置与启动脚本
 :: ======================================================================
 
+:: --- 檢查管理員權限 ---
+net session >nul 2>&1
+if %errorLevel% == 0 (
+    echo [權限檢查] ✓ 程序已以管理員權限運行
+    goto CONTINUE_STARTUP
+) else (
+    echo [權限檢查] 正在請求管理員權限...
+    powershell -Command "Start-Process -FilePath '%~f0' -Verb runAs"
+    exit /b
+)
+
+:CONTINUE_STARTUP
 :: --- 初始化环境 ---
 cd /d "%~dp0"
 chcp 65001 >nul 2>&1
 setlocal enabledelayedexpansion
-title Axiom AI - 环境配置
+title Axiom AI - 环境配置 (管理員模式)
 
 :START
 cls
