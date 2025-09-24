@@ -19,6 +19,8 @@ class LanguageManager:
                 "fov_size": "FOV大小",
                 "min_confidence": "檢測最低概率(%)",
                 "detect_interval": "檢測間隔(ms)",
+                "mouse_move_method": "滑鼠移動方式:",
+                "mouse_move_ddxoft": "ddxoft (最隱蔽)",
                 "single_target_mode": "單目標模式 (一次最多鎖定一個最近的敵人)",
                 
                 # PID 控制
@@ -35,7 +37,6 @@ class LanguageManager:
                 "compute_mode": "運算模式",
                 "cpu": "CPU",
                 "gpu_directml": "DirectML (GPU)",
-                "gpu_cuda": "CUDA (GPU)",
                 "toggle_auto_aim": "自動瞄準開關",
                 "exit_and_save": "退出並保存",
                 
@@ -113,12 +114,6 @@ class LanguageManager:
                 "donate": "捐款",
                 "donate_en": "Donate",
                 
-                # 高級/簡單模式切換
-                "advanced_mode": "高級模式",
-                "simple_mode": "簡單模式",
-                "mode_switch_tooltip": "切換高級/簡單模式\n高級模式：完整功能\n簡單模式：簡化操作",
-                "unified_xy_speed": "統一 X/Y 軸速度",
-                "unified_speed_tooltip": "同時調整水平和垂直軸的瞄準速度",
                 
                 # 設定檔相關
                 "config_saved": "設定已儲存",
@@ -153,7 +148,7 @@ class LanguageManager:
 - 這是為了確保程序的準確性和最佳效能""",
                 "scaling_close_button": "我知道了，關閉程序",
                 
-                # ***** 新增：參數管理系統 *****
+                # 參數管理系統
                 "preset_manager": "參數管理",
                 "preset_config": "參數配置",
                 "parameter_name": "參數名稱",
@@ -192,6 +187,8 @@ class LanguageManager:
                 "fov_size": "FOV Size",
                 "min_confidence": "Min Confidence (%)",
                 "detect_interval": "Detection Interval (ms)",
+                "mouse_move_method": "Mouse Move Method:",
+                "mouse_move_ddxoft": "ddxoft (Most Stealthy)",
                 "single_target_mode": "Single Target Mode (Lock on the nearest enemy at a time)",
                 
                 # PID control
@@ -208,7 +205,6 @@ class LanguageManager:
                 "compute_mode": "Compute Mode",
                 "cpu": "CPU",
                 "gpu_directml": "DirectML (GPU)",
-                "gpu_cuda": "CUDA (GPU)",
                 "toggle_auto_aim": "Toggle Auto Aim",
                 "exit_and_save": "Exit & Save",
                 
@@ -286,12 +282,6 @@ class LanguageManager:
                 "donate": "Donate",
                 "donate_en": "Donate",
                 
-                # Advanced/Simple mode toggle
-                "advanced_mode": "Advanced Mode",
-                "simple_mode": "Simple Mode",
-                "mode_switch_tooltip": "Toggle Advanced/Simple Mode\nAdvanced: Full features\nSimple: Simplified operation",
-                "unified_xy_speed": "Unified X/Y Speed",
-                "unified_speed_tooltip": "Adjust horizontal and vertical aim speed together",
                 
                 # Config related
                 "config_saved": "Configuration Saved",
@@ -326,7 +316,7 @@ class LanguageManager:
 - This ensures program accuracy and optimal performance""",
                 "scaling_close_button": "Understood, Close Program",
                 
-                # ***** 新增：配置預設管理系統 *****
+                # 配置預設管理系統
                 "preset_manager": "Preset Manager",
                 "preset_config": "Preset Configuration",
                 "parameter_name": "Parameter Name",

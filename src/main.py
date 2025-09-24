@@ -9,9 +9,9 @@ import mss
 import win32api
 import win32con
 import sys
-import winsound  # ***** 新增：音效模組 *****
+import winsound
 import os
-import psutil  # ***** 新增：進程優化模組 *****
+import psutil
 from typing import Optional
 
 # 根據模型類型導入不同函式庫
@@ -21,12 +21,12 @@ from ultralytics import YOLO
 
 # 從我們自己建立的模組中導入
 from config import Config, load_config
-from win_utils import send_mouse_move, is_key_pressed
+from win_utils import send_mouse_move, send_mouse_click, is_key_pressed, check_and_request_admin, test_ddxoft_functions, get_ddxoft_statistics
 from inference import preprocess_image, postprocess_outputs, non_max_suppression, PIDController
 from overlay import start_pyqt_overlay, PyQtOverlay
 from settings_gui import create_settings_gui
-from status_panel import StatusPanel # ***** 新增此行 *****
-from scaling_warning_dialog import check_windows_scaling # ***** 新增此行 *****
+from status_panel import StatusPanel
+from scaling_warning_dialog import check_windows_scaling
 
 
 
@@ -59,7 +59,7 @@ def optimize_cpu_performance(config):
             except Exception as e:
                 print(f"[性能優化] 設定進程優先級失敗：{e}")
         else:
-            print("[性能優化] 非Windows系統，跳過進程優先級設定")
+            print("[性能優化] 跳過進程優先級設定")
         
         # 設定CPU親和性
         cpu_affinity = getattr(config, 'cpu_affinity', None)
@@ -130,14 +130,13 @@ def ai_logic_loop(config, model, model_type, boxes_queue, confidences_queue):
     if set_thread_priority:
         thread_priority = getattr(config, 'thread_priority', 'high')
         set_thread_priority(thread_priority)
-        print(f"[性能優化] AI線程優先級設定為：{thread_priority}")
     
     screen_capture = mss.mss()
     
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    # 移除 CUDA 支援，PyTorch 模型只使用 CPU
     if model_type == 'pt':
-        print(f"PyTorch 模型將在 {device} 上運行。")
-        model.to(device)
+        print(f"PyTorch 模型將在 CPU 上運行。")
+        model.to('cpu')
 
     input_name = None
     if model_type == 'onnx':
@@ -150,7 +149,11 @@ def ai_logic_loop(config, model, model_type, boxes_queue, confidences_queue):
     last_pid_update = 0
     pid_check_interval = 1.0  # 每秒檢查一次PID參數變化
     
-    # ***** 新增：音效提示相關變數 *****
+    # ddxoft 統計顯示控制
+    last_ddxoft_stats_time = 0
+    ddxoft_stats_interval = 30.0  # 每30秒顯示一次 ddxoft 統計
+    
+    # 音效提示相關變數
     last_sound_time = 0
     sound_playing = False
     
@@ -166,6 +169,21 @@ def ai_logic_loop(config, model, model_type, boxes_queue, confidences_queue):
             pid_x.Kp, pid_x.Ki, pid_x.Kd = config.pid_kp_x, config.pid_ki_x, config.pid_kd_x
             pid_y.Kp, pid_y.Ki, pid_y.Kd = config.pid_kp_y, config.pid_ki_y, config.pid_kd_y
             last_pid_update = current_time
+            
+            # 檢查滑鼠移動方式是否有變更
+            if not hasattr(config, '_last_mouse_move_method'):
+                config._last_mouse_move_method = getattr(config, 'mouse_move_method', 'mouse_event')
+            elif config._last_mouse_move_method != getattr(config, 'mouse_move_method', 'mouse_event'):
+                config._last_mouse_move_method = getattr(config, 'mouse_move_method', 'mouse_event')
+                print(f"[配置更新] 滑鼠移動方式已更新為: {config._last_mouse_move_method}")
+        
+        # ddxoft 統計顯示
+        current_method = getattr(config, 'mouse_move_method', 'mouse_event')
+        if current_method == 'ddxoft' and current_time - last_ddxoft_stats_time > ddxoft_stats_interval:
+            stats = get_ddxoft_statistics()
+            if stats['total_count'] > 0:
+                print(f"[ddxoft] 運行狀態報告 - 成功: {stats['success_count']}, 失敗: {stats['failure_count']}, 成功率: {stats['success_rate']:.1f}%")
+            last_ddxoft_stats_time = current_time
         
         # 優化：緩存十字準心位置計算
         if config.fov_follow_mouse:
@@ -265,7 +283,7 @@ def ai_logic_loop(config, model, model_type, boxes_queue, confidences_queue):
             absolute_boxes = filtered_boxes
             confidences = filtered_confidences
 
-        # ***** 新增：單目標模式 - 只保留離準心最近的一個目標 *****
+        # 單目標模式 - 只保留離準心最近的一個目標
         if config.single_target_mode and absolute_boxes:
             crosshair_x, crosshair_y = config.crosshairX, config.crosshairY
             closest_box = None
@@ -292,7 +310,7 @@ def ai_logic_loop(config, model, model_type, boxes_queue, confidences_queue):
                 absolute_boxes = []
                 confidences = []
 
-        # ***** 新增：音效提示系統 - 檢測準心是否在敵人框內 *****
+        # 音效提示系統 - 檢測準心是否在敵人框內
         if not config.single_target_mode or not absolute_boxes:
             crosshair_x, crosshair_y = config.crosshairX, config.crosshairY
         target_detected = False
@@ -352,8 +370,9 @@ def ai_logic_loop(config, model, model_type, boxes_queue, confidences_queue):
                 _, errorX, errorY = valid_targets[0]
                 dx, dy = pid_x.update(errorX), pid_y.update(errorY)
                 if abs(dx) > 0 or abs(dy) > 0:
-                    # 直接使用mouse_event
-                    send_mouse_move(int(dx), int(dy), method="delayed")
+                    # 使用配置中的滑鼠移動方式
+                    current_method = getattr(config, 'mouse_move_method', 'mouse_event')
+                    send_mouse_move(int(dx), int(dy), method=current_method)
             else:
                 pid_x.reset()
                 pid_y.reset()
@@ -389,7 +408,6 @@ def auto_fire_loop(config, boxes_queue):
     if set_thread_priority:
         thread_priority = getattr(config, 'thread_priority', 'high')
         set_thread_priority(thread_priority)
-        print(f"[性能優化] 自動開火線程優先級設定為：{thread_priority}")
     
     last_key_state = False
     delay_start_time = None
@@ -398,7 +416,7 @@ def auto_fire_loop(config, boxes_queue):
     last_box_update = 0
     
     # 優化參數 - 根據檢測間隔調整
-    BOX_UPDATE_INTERVAL = 1 / 60  # ***** 修改：與主迴圈同步更新頻率 *****
+    BOX_UPDATE_INTERVAL = 1 / 60
     
     # 修復：動態更新按鍵配置
     auto_fire_key = config.auto_fire_key
@@ -419,6 +437,10 @@ def auto_fire_loop(config, boxes_queue):
         key_state = is_key_pressed(auto_fire_key)
         if auto_fire_key2:
             key_state = key_state or is_key_pressed(auto_fire_key2)
+        
+        # 調試：首次按下按鍵時輸出信息
+        if key_state and not last_key_state:
+            print(f"[自動開火] 按鍵觸發 - 主鍵: {auto_fire_key}, 副鍵: {auto_fire_key2}")
 
         # 處理按鍵狀態變化
         if key_state and not last_key_state:
@@ -492,9 +514,10 @@ def auto_fire_loop(config, boxes_queue):
                                     should_fire = True
 
                             if should_fire:
-                                # 快速射擊
-                                win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
-                                win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+                                # 使用配置的滑鼠點擊方式進行射擊
+                                mouse_click_method = getattr(config, 'mouse_click_method', 'mouse_event')
+                                print(f"[自動開火] 觸發射擊 - 方式: {mouse_click_method}, 目標: {target_part}")
+                                send_mouse_click(mouse_click_method)
                                 last_fire_time = current_time
                                 break
         else:
@@ -505,7 +528,6 @@ def auto_fire_loop(config, boxes_queue):
 
         last_key_state = key_state
         
-        # ***** 修改：將此迴圈的休眠時間固定為 1/60 秒，與主迴圈同步 *****
         time.sleep(1 / 60)
 
 
@@ -517,7 +539,6 @@ def aim_toggle_key_listener(config, update_gui_callback=None):
     if set_thread_priority:
         thread_priority = getattr(config, 'thread_priority', 'high')
         set_thread_priority(thread_priority)
-        print(f"[性能優化] 快捷鍵監聽線程優先級設定為：{thread_priority}")
     
     last_state = False
     key_code = getattr(config, 'aim_toggle_key', 0x78)  # 默認 F9 鍵
@@ -525,16 +546,11 @@ def aim_toggle_key_listener(config, update_gui_callback=None):
     # 獲取按鍵名稱
     from win_utils import get_vk_name
     key_name = get_vk_name(key_code)
-    print(f"[快捷鍵監聽] 開始監聽快捷鍵: {key_name} (0x{key_code:02X})")
-    print(f"[快捷鍵監聽] 當前自動瞄準狀態: {config.AimToggle}")
-    print(f"[快捷鍵監聽] 按下 {key_name} 來切換自動瞄準功能")
     
     # 優化：預計算睡眠時間
     performance_mode = getattr(config, 'performance_mode', False)
     sleep_interval = 0.01 if performance_mode else 0.03  # 性能模式下更頻繁檢查
     
-    # 調試計數器
-    debug_counter = 0
     
     while config.Running:
         try:
@@ -543,7 +559,6 @@ def aim_toggle_key_listener(config, update_gui_callback=None):
             if current_key_code != key_code:
                 key_code = current_key_code
                 key_name = get_vk_name(key_code)
-                print(f"[快捷鍵監聽] 快捷鍵已更新為: {key_name} (0x{key_code:02X})")
             
             # 檢測按鍵狀態
             state = bool(win32api.GetAsyncKeyState(key_code) & 0x8000)
@@ -552,17 +567,13 @@ def aim_toggle_key_listener(config, update_gui_callback=None):
             if state and not last_state:
                 old_state = config.AimToggle
                 config.AimToggle = not config.AimToggle
-                print(f"[快捷鍵] ✓ 檢測到 {key_name} 按下！自動瞄準: {old_state} → {config.AimToggle}")
+                print(f"[快捷鍵] 自動瞄準: {old_state} → {config.AimToggle}")
                 
                 if update_gui_callback:
                     update_gui_callback(config.AimToggle)
             
             last_state = state
             
-            # 每30秒輸出一次狀態報告
-            debug_counter += 1
-            if debug_counter % (30 * (1.0 / sleep_interval)) == 0:
-                print(f"[快捷鍵監聽] 運行中... 當前監聽: {key_name}, 自動瞄準: {config.AimToggle}")
             
         except Exception as e:
             print(f"[快捷鍵監聽] 錯誤: {e}")
@@ -573,20 +584,25 @@ def aim_toggle_key_listener(config, update_gui_callback=None):
         time.sleep(sleep_interval)
 
 if __name__ == "__main__":
+    # 檢查管理員權限
+    check_and_request_admin()
+    
     # 在程序開始時檢測 Windows 縮放比例
-    print("[系統檢測] 正在檢測 Windows 縮放設定...")
     if not check_windows_scaling():
-        print("[系統檢測] 程序因縮放設定問題而退出")
         sys.exit(1)
-    print("[系統檢測] ✓ 縮放設定檢測通過")
     
     config = Config()
     load_config(config)
     
+    # 調試：顯示載入的滑鼠移動方式
+    print(f"[配置載入] 滑鼠移動方式: {getattr(config, 'mouse_move_method', 'mouse_event')}")
+    
+    # 如果使用 ddxoft，進行功能測試
+    if getattr(config, 'mouse_move_method', 'mouse_event') == 'ddxoft':
+        test_ddxoft_functions()
+    
     # 在程序開始時優化CPU性能
-    print("[性能優化] 正在優化CPU性能設定...")
     optimize_cpu_performance(config)
-    print("[性能優化] ✓ CPU性能優化完成")
 
     # 優化：使用配置中的隊列大小設置
     max_queue_size = getattr(config, 'max_queue_size', 3)
@@ -610,28 +626,23 @@ if __name__ == "__main__":
         if model_path.endswith('.onnx'):
             model_type = 'onnx'
             try:
-                print(f"正在載入 ONNX 模型: {model_path}")
                 providers = ['DmlExecutionProvider', 'CPUExecutionProvider']
                 
                 # 獲取優化的會話選項
                 session_options = optimize_onnx_session(config)
                 if session_options:
                     model = ort.InferenceSession(model_path, providers=providers, sess_options=session_options)
-                    print(f"[性能優化] ONNX 模型已使用優化設定載入")
                 else:
                     model = ort.InferenceSession(model_path, providers=providers)
                 
                 config.current_provider = model.get_providers()[0]
-                print(f"ONNX 模型載入成功，使用: {config.current_provider}")
             except Exception as e:
                 print(f"載入 ONNX 模型失敗: {e}"); return False
         elif model_path.endswith('.pt'):
             model_type = 'pt'
             try:
-                print(f"正在載入 PyTorch 模型: {model_path}")
                 model = YOLO(model_path)
                 model(np.zeros((640, 640, 3), dtype=np.uint8), verbose=False) # 預熱
-                print("PyTorch 模型載入成功。")
             except Exception as e:
                 print(f"載入 PyTorch 模型失敗: {e}"); return False
         else:
@@ -642,7 +653,6 @@ if __name__ == "__main__":
         
         ai_thread.start()
         auto_fire_thread.start()
-        print("AI 相關執行緒已啟動。")
         return True
 
     # 啟動設置 GUI
@@ -650,15 +660,12 @@ if __name__ == "__main__":
     settings_thread.start()
     
     # 確保配置完全載入後再啟動快捷鍵監聽
-    print(f"[初始化] 配置載入完成，快捷鍵設置: {getattr(config, 'aim_toggle_key', 'None')}")
     time.sleep(0.5)  # 等待 GUI 完全初始化
     
     # 啟動快捷鍵監聽（在 GUI 啟動後）
     toggle_thread = threading.Thread(target=aim_toggle_key_listener, args=(config,), daemon=True)
     toggle_thread.start()
-    print("[初始化] 快捷鍵監聽線程已啟動")
 
-    print("啟動 Overlays... 所有模組已開始運作。")
     
     import sys
     from PyQt6.QtWidgets import QApplication

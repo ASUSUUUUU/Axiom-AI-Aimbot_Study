@@ -29,22 +29,22 @@ class Config:
         
         # ONNX 模型相關設定
         self.model_input_size = 640
-        default_model_name = 'Rivals.onnx'
+        default_model_name = 'Roblox.onnx'
         self.model_path = os.path.join('模型', default_model_name)
         self.current_provider = "CPUExecutionProvider"
 
         # 瞄準與顯示設定
         self.AimKeys = [0x01, 0x06, 0x02]  # 左鍵 + X2鍵 + 右鍵
-        self.fov_size = 666
+        self.fov_size = 222
         self.show_confidence = True
-        self.min_confidence = 0.66
+        self.min_confidence = 0.11
         self.aim_part = "head"
         
-        # ***** 新增：單目標模式 *****
+        # 單目標模式
         self.single_target_mode = True  # 一次最多檢測一個離準心最近的敵人
         
-        # ***** 新增：音效提示系統 *****
-        self.enable_sound_alert = True  # 啟用音效提示
+        # 音效提示系統
+        self.enable_sound_alert = False  # 啟用音效提示
         self.sound_frequency = 1000     # 音效頻率 (Hz)
         self.sound_duration = 100       # 音效持續時間 (ms)
         self.sound_interval = 200       # 音效間隔 (ms)
@@ -62,36 +62,34 @@ class Config:
         self.pid_ki_y = 0.0       # 垂直 I: 積分
         self.pid_kd_y = 0.0       # 垂直 D: 微分
 
-        # 新增：勻速移動模式
-        self.constant_speed_mode = False  # 是否使用勻速移動而非PID控制
-        self.constant_speed_x = 2.0       # 水平勻速移動速度
-        self.constant_speed_y = 2.0       # 垂直勻速移動速度
-        
         # 新增：滑鼠移動方式選擇
-        self.mouse_move_method = "delayed"  # 固定使用mouse_event
+        self.mouse_move_method = "mouse_event"  # 固定使用mouse_event
+        
+        # 新增：滑鼠點擊方式選擇
+        self.mouse_click_method = "ddxoft"  # 使用ddxoft點擊方式
 
         # 優化：調整檢測間隔為更合理的值，平衡性能和響應速度
-        self.detect_interval = 1 / 60  # ***** 修改：將檢測間隔設定為每秒 60 次 *****
+        self.detect_interval = 1 / 60
         self.aim_toggle_key = 45  # Insert 鍵
         self.auto_fire_key2 = 0x04  # 滑鼠中鍵
         
         # 自動開槍
         self.auto_fire_key = 0x06   # 滑鼠X2鍵
         self.auto_fire_delay = 0.0  # 無延遲
-        self.auto_fire_interval = 0.18 # 射擊間隔
+        self.auto_fire_interval = 0.08 # 射擊間隔 (從180ms減少到80ms)
         self.auto_fire_target_part = "both" # 可選: "head", "body", "both"
 
         # 保持檢測功能
         self.keep_detecting = True  # 啟用保持檢測
         # FOV 跟隨鼠標
-        self.fov_follow_mouse = False
+        self.fov_follow_mouse = True
         
 
 
         # 顯示開關
         self.show_fov = True
         self.show_boxes = True
-        self.show_status_panel = True # ***** 新增此行 *****
+        self.show_status_panel = True
         
         # 優化：性能相關設置
         self.performance_mode = True  # 預設啟用性能模式，最大化CPU使用率
@@ -102,9 +100,6 @@ class Config:
         self.thread_priority = "high"  # 線程優先級：normal, high, realtime
         self.process_priority = "high"  # 進程優先級：normal, high, realtime
         self.cpu_affinity = None  # CPU親和性設定，None表示使用所有CPU核心
-        
-        # 新增：高級/簡單模式切換
-        self.advanced_mode = True  # True=高級模式，False=簡單模式
 
 def save_config(config_instance):
     """將所有可配置的參數儲存到 config.json"""
@@ -130,14 +125,13 @@ def save_config(config_instance):
         'aim_toggle_key': getattr(config_instance, 'aim_toggle_key', 45),
 
         
-        # ***** 新增的儲存項目 *****
-        'model_path': getattr(config_instance, 'model_path', os.path.join('模型', 'Rivals.onnx')),
+        'model_path': getattr(config_instance, 'model_path', os.path.join('模型', 'Roblox.onnx')),
         'auto_fire_key2': getattr(config_instance, 'auto_fire_key2', 0x04),
         'AimToggle': getattr(config_instance, 'AimToggle', True),
         'show_fov': getattr(config_instance, 'show_fov', True),
         'show_boxes': getattr(config_instance, 'show_boxes', True),
-        'show_status_panel': getattr(config_instance, 'show_status_panel', True), # ***** 新增此行 *****
-        'single_target_mode': getattr(config_instance, 'single_target_mode', True), # ***** 新增：單目標模式 *****
+        'show_status_panel': getattr(config_instance, 'show_status_panel', True),
+        'single_target_mode': getattr(config_instance, 'single_target_mode', True),
         
         # 頭部和身體區域占比設定
         'head_width_ratio': getattr(config_instance, 'head_width_ratio', 0.38),
@@ -160,11 +154,11 @@ def save_config(config_instance):
         'sound_duration': getattr(config_instance, 'sound_duration', 100),
         'sound_interval': getattr(config_instance, 'sound_interval', 200),
         
-        # 新增：高級/簡單模式切換
-        'advanced_mode': getattr(config_instance, 'advanced_mode', True),
-        
         # 新增：滑鼠移動方式
-        'mouse_move_method': getattr(config_instance, 'mouse_move_method', 'delayed'),
+        'mouse_move_method': getattr(config_instance, 'mouse_move_method', 'mouse_event'),
+        
+        # 新增：滑鼠點擊方式
+        'mouse_click_method': getattr(config_instance, 'mouse_click_method', 'ddxoft'),
     }
     try:
         with open('config.json', 'w', encoding='utf-8') as f:

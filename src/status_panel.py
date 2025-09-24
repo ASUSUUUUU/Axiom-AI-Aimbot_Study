@@ -29,15 +29,8 @@ def get_compute_mode_text(config):
     
     # 檢查是否為 PyTorch 模型
     if model_path.endswith('.pt'):
-        try:
-            import torch
-            # 檢查 CUDA 是否可用
-            if torch.cuda.is_available():
-                return get_text("gpu_cuda")  # 新增 CUDA GPU 文字
-            else:
-                return get_text("cpu")
-        except ImportError:
-            return get_text("cpu")
+        # 移除 CUDA 支援，PyTorch 模型只使用 CPU
+        return get_text("cpu")
     
     # ONNX 模型邏輯
     current_provider = getattr(config, 'current_provider', 'CPUExecutionProvider')
