@@ -162,22 +162,6 @@ Axiom is designed for gamers who are at a disadvantage compared to regular playe
    - Press the configured toggle key (default: Insert)	
    - The system will begin real-time detection	
    - Visual feedback will appear on screen	
- 	
-## 🤝 Contributing	
- 	
-I'm welcome contributions to improve Axiom AI! Please follow these guidelines:	
- 	
-### Development Setup
-```bash
-# Clone the repository	# Clone the repository
-git clone https://github.com/iishong0w0/Axiom-AI.git
-
-# Install development dependencies
-pip install -r requirements.txt	pip install -r requirements.txt
-# Run tests (if available)	
-python -m pytest tests/
-
-```
  	 
 ## 📄 License
 This project is licensed under the **PolyForm Noncommercial License 1.0.0**.
