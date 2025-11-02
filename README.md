@@ -18,7 +18,7 @@
  	 
 </div>	</div>
  	 
-## 🎯 Overview	
+## Overview	
  	
 ## Axiom AI is a sophisticated computer vision application designed for real-time object detection and interaction.	
  	
@@ -122,9 +122,9 @@ Axiom is designed for gamers who are at a disadvantage compared to regular playe
 - Projector users	
 - Cat-occupied mousepad players	
  	
-**⚠️ Important Notice**: This software is licensed under the PolyForm Noncommercial License 1.0.0. Commercial use is strictly prohibited.	
+**Important Notice**: This software is licensed under the PolyForm Noncommercial License 1.0.0. Commercial use is strictly prohibited.	
  	
-## 💻 System Requirements	
+## System Requirements	
  	
 ### Minimum Requirements	
 - **OS**: Windows 10/11 (64-bit)	
@@ -138,12 +138,12 @@ Axiom is designed for gamers who are at a disadvantage compared to regular playe
 - **RAM**: 32GB or higher	
 - **Graphics**: rtx3060	
  	
-## 🚀 Installation	
+## Installation	
 1. Download the latest release from the [Releases page](https://github.com/iishong0w0/Axiom-AI/releases/latest)	
 2. Extract the ZIP file	
 3. Run `啟動Launcher.bat`	
  	
-## 🎮 Usage	
+## Usage	
  	
 ### Basic Operation	
 1. **Launch the Application**	
