@@ -1,0 +1,9 @@
+numpy
+mss
+opencv-python
+onnxruntime-directml
+PyQt6
+pywin32
+pyserial
+qfluentwidgets
+vgamepad
